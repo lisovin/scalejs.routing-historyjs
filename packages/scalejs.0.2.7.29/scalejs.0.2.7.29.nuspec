@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>scalejs</id>
+    <version>0.2.7.29</version>
+    <title>scalejs</title>
+    <authors>Peter Lisovin</authors>
+    <owners>Peter Lisovin</owners>
+    <projectUrl>https://github.com/lisovin/scalejs</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Core of the framework for developing scalable JavaScript client side applications.
+
+      The framework is targeted towards a .Net developer who has experience with Silverlight or WPF and is looking for ways to apply same principles and patterns (e.g. MVVM, bindings, modularization, templated controls, reactive programming, etc.) to JavaScript client side development. It's inspired by Nicholas Zakas "Scalable JavaScript Application Architecture" talk.
+
+      The framework leverages best tools and libraries such as Knockout, Linq, RxJS, RequireJS, JSLint, Nuget, Chutzpah, jasmine, etc. and relies on what's considered as "good parts" of JavaScript language.</description>
+    <summary>Core library for developing scalable JavaScript application</summary>
+    <tags>JavaScript scalejs scalable</tags>
+    <dependencies>
+      <dependency id="es5-shim" />
+      <dependency id="json2" />
+    </dependencies>
+  </metadata>
+</package>
