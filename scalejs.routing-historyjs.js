@@ -1,0 +1,30 @@
+/*global define*/
+define([
+    'scalejs!core',
+    './scalejs.routing-historyjs/part1'
+], function (
+    core,
+    part1
+) {
+    'use strict';
+
+    // There are few ways you can register an extension.
+    // 1. Core and Sandbox are extended in the same way:
+    //      core.registerExtension({ part1: part1 });
+    //
+    // 2. Core and Sandbox are extended differently:
+    //      core.registerExtension({
+    //          core: {corePart: corePart},
+    //          sandbox: {sandboxPart: sandboxPart}
+    //      });
+    //
+    // 3. Core and Sandbox are extended dynamically:
+    //      core.registerExtension({
+    //          buildCore: buildCore,
+    //          buildSandbox: buildSandbox
+    //      });
+    core.registerExtension({
+        part1: part1
+    });
+});
+
