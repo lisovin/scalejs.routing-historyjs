@@ -1,30 +1,28 @@
 /*global define*/
 define([
     'scalejs!core',
-    './scalejs.routing-history/part1'
+    './scalejs.routing-history/routing',
+    'scalejs.reactive',
+    'scalejs.statechart-scion'
 ], function (
     core,
-    part1
+    routing
 ) {
     'use strict';
 
-    // There are few ways you can register an extension.
-    // 1. Core and Sandbox are extended in the same way:
-    //      core.registerExtension({ part1: part1 });
-    //
-    // 2. Core and Sandbox are extended differently:
-    //      core.registerExtension({
-    //          core: {corePart: corePart},
-    //          sandbox: {sandboxPart: sandboxPart}
-    //      });
-    //
-    // 3. Core and Sandbox are extended dynamically:
-    //      core.registerExtension({
-    //          buildCore: buildCore,
-    //          buildSandbox: buildSandbox
-    //      });
+    var extend = core.object.extend;
+
+    function buildCore() {
+        extend(core, { routing: routing(core) });
+    }
+
+    function buildSandbox(sandbox) {
+        extend(sandbox, { routing: core.routing });
+    }
+
     core.registerExtension({
-        part1: part1
+        buildCore: buildCore,
+        buildSandbox: buildSandbox
     });
 });
 

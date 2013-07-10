@@ -2,7 +2,16 @@
 
 $project |
 	Add-Paths "{
-		'scalejs.routing-history' : 'Scripts/scalejs.routing-history-$($package.Version)'
+		'scalejs.navigation-history' : 'Scripts/scalejs.navigation-history-$($package.Version)',
+		'history': 'Scripts/native.history'
 	}" |
-	Add-ScalejsExtension 'scalejs.routing-history' |
+	Add-Shims "{
+		'history': {
+			exports: 'History'
+		},
+		'scalejs.navigation-history': {
+			deps: ['history']
+		}
+	}" |
+	Add-ScalejsExtension 'scalejs.navigation-history' |
 	Out-Null

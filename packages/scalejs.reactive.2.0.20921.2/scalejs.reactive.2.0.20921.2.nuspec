@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>scalejs.reactive</id>
+    <version>2.0.20921.2</version>
+    <title>scalejs.reactive</title>
+    <authors>Peter Lisovin</authors>
+    <owners>Peter Lisovin</owners>
+    <projectUrl>https://github.com/lisovin/scalejs.reactive</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Adds reactive extensions to scalable JavaScript application.</description>
+    <releaseNotes />
+    <copyright />
+    <language />
+    <tags>JavaScript scalejs scalejs.reactive rxjs reactive</tags>
+    <dependencies>
+      <dependency id="RxJS-Binding" version="2.0.20921" />
+      <dependency id="RxJS-Main" version="2.0.20921" />
+      <dependency id="RxJS-Time" version="2.0.20921" />
+      <dependency id="RxJS-Experimental" version="2.0.20921" />
+      <dependency id="scalejs" version="0.2.6" />
+    </dependencies>
+  </metadata>
+</package>
