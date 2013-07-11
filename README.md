@@ -40,11 +40,11 @@ var registerStates = sandbox.state.registerStates,
 
 registerStates('root', parallel('app', routerState())); 
 
-        registerStates('router',
-            state('main',
-                onEntry(function () {
-					//do stuff here...
-				})));
+registerStates('router',
+    state('main',
+        onEntry(function () {
+				//do stuff here...
+			})));
 ```
 
 ### Adding simple routing capability to state
