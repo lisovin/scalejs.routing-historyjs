@@ -60,7 +60,7 @@ var registerStates = sandbox.state.registerStates,
 
 registerStates('main',
     state('dashboard',
-	route('dashboard')));
+        route('dashboard')));
 ```
 
 This will create a url for the `dashboard` state that looks like this
