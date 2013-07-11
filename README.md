@@ -100,6 +100,6 @@ All functions can be found under the 'routing' namespace.
 - `navigate(location, query)` <br/> Adds new state to your browser. `location` must be a string and `query` must be an object.
 - `removeHash()` <br/> Removes anything after a hash in the url, replaces (not adds) to your history state.
 - `back(steps)` <br/> Goes back in history by a number of steps. `steps` is optional and by default is -1.
-- `route(location, queryFunc)`' <br/> adds a route transition to the router state. `queryFunc` is optional but if provided must return an object like in the example above.
+- `route(location, queryFunc)` <br/> adds a route transition to the router state. `queryFunc` is optional but if provided must return an object like in the example above.
 - `routerState()` <br/> creates the `router` state for your app, should be used like in the example above.
 
