@@ -40,11 +40,11 @@ var registerStates = sandbox.state.registerStates,
 
 registerStates('root', parallel('app', routerState())); 
 
-        registerStates('router',
-            state('main',
-                onEntry(function () {
-					//do stuff here...
-				})));
+registerStates('router',
+    state('main',
+        onEntry(function () {
+				//do stuff here...
+			})));
 ```
 
 ### Adding simple routing capability to state
@@ -56,11 +56,11 @@ Now that you have created your router, states which require routing will need so
 ``` javascript
 var registerStates = sandbox.state.registerStates,
     state = sandbox.state.builder.state,
-	route = sandbox.routing.route,
+    route = sandbox.routing.route,
 
-	registerStates('main',
-        state('dashboard',
-			route('dashboard')));
+registerStates('main',
+    state('dashboard',
+        route('dashboard')));
 ```
 
 This will create a url for the `dashboard` state that looks like this
@@ -98,8 +98,8 @@ All functions can be found under the 'routing' namespace.
 
 - `observe()` <br/> Creates an observable for navigation events which you can subscribe to.
 - `navigate(location, query)` <br/> Adds new state to your browser. `location` must be a string and `query` must be an object.
-- `removeHash` <br/> Removes anything after a hash in the url, replaces (not adds) to your history state.
+- `removeHash()` <br/> Removes anything after a hash in the url, replaces (not adds) to your history state.
 - `back(steps)` <br/> Goes back in history by a number of steps. `steps` is optional and by default is -1.
-- `route(location, queryFunc`' <br/> adds a route transition to the router state. `queryFunc` is optional but if provided must return an object like in the example above.
+- `route(location, queryFunc)` <br/> adds a route transition to the router state. `queryFunc` is optional but if provided must return an object like in the example above.
 - `routerState()` <br/> creates the `router` state for your app, should be used like in the example above.
 
