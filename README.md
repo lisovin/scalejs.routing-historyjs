@@ -56,11 +56,11 @@ Now that you have created your router, states which require routing will need so
 ``` javascript
 var registerStates = sandbox.state.registerStates,
     state = sandbox.state.builder.state,
-	route = sandbox.routing.route,
+    route = sandbox.routing.route,
 
-	registerStates('main',
-        state('dashboard',
-			route('dashboard')));
+registerStates('main',
+    state('dashboard',
+	route('dashboard')));
 ```
 
 This will create a url for the `dashboard` state that looks like this
