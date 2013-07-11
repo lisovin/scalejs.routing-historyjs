@@ -10,7 +10,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Properties\build.rjs" />
-    <Content Include="Properties\scalejs.routing-historyjs.nuspec" />
+    <Content Include="Properties\scalejs.routing-historyjs.nuspec">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="scalejs.routing-historyjs.js" />
     <Content Include="scalejs.routing-historyjs\history.js" />
     <Content Include="scalejs.routing-historyjs\routing.js" />
@@ -18,6 +20,8 @@
     <Content Include="Scripts\es5-shim.min.js" />
     <Content Include="Scripts\json2.js" />
     <Content Include="Scripts\json2.min.js" />
+    <Content Include="Scripts\native.history.js" />
+    <Content Include="Scripts\native.history.min.js" />
     <Content Include="Scripts\scalejs-0.2.7.30.js" />
     <Content Include="Scripts\scalejs-0.2.7.30.min.js" />
     <Content Include="tools\install.ps1" />
