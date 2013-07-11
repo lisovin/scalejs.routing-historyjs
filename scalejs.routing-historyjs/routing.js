@@ -145,7 +145,7 @@ define([
         //creates a routed state for statechart
         function routerState() {
             return state('router', state('waiting', onEntry(function () {
-                var curr = "";
+                var curr;
 
                 function isCurrent(url) {
                     return url === curr;

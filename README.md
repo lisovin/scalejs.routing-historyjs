@@ -1,4 +1,4 @@
-sclaejs.routing-historyjs <br/> v0.2.2, July 11 2013
+sclaejs.routing-historyjs <br/> v0.2.3, July 11 2013
 ==================
 Add routing capabilities to your [Scalable JavaScript client side application](https://github.com/lisovin/scalejs)
 
