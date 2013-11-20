@@ -1,0 +1,26 @@
+/*global define*/
+define([
+    'scalejs!core',
+    './scalejs.routing-historyjs/routing'
+], function (
+    core,
+    routing
+) {
+    'use strict';
+
+    var extend = core.object.extend;
+
+    function buildCore() {
+        extend(core, { routing: routing(core) });
+    }
+
+    function buildSandbox(sandbox) {
+        extend(sandbox, { routing: core.routing });
+    }
+
+    core.registerExtension({
+        buildCore: buildCore,
+        buildSandbox: buildSandbox
+    });
+});
+
