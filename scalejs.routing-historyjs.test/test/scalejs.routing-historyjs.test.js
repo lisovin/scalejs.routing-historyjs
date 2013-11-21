@@ -29,13 +29,14 @@ define([
         it('is defined in the core', function () {
             expect(core.routing).toBeDefined();
         });
-        /*
+
         it('when application starts root state gets entered', function () {
-            var entered = jasmine.createSpy();
+            var entered = jasmine.createSpy('t1.entered');
 
             runs(function () {
-                registerStates('root', state('t1', routerState(baseUrl())));
-                registerStates('router', state('a', route('/'), onEntry(entered)));
+                registerStates('root',
+                    routerState({ baseUrl: baseUrl() }, 
+                        state('t1', route('/'), onEntry(entered))));
                 core.notifyApplicationStarted();
             });
 
@@ -45,18 +46,20 @@ define([
                 raise('router.disposing');
 
                 core.notifyApplicationStopped();
-                unregisterStates('t1');
+                unregisterStates('router');
 
                 expect(entered).toHaveBeenCalled();
             });
         });
-        */
+
         it('when application starts again root state gets entered again', function () {
-            var entered = jasmine.createSpy();
+            var entered = jasmine.createSpy('t2.onEntry');
 
             runs(function () {
-                registerStates('root', state('t2', routerState(baseUrl())));
-                registerStates('router', state('s1', route('/'), onEntry(entered)));
+                registerStates('root',
+                    routerState({ baseUrl: baseUrl() },
+                        state('t2', route('/'), onEntry(entered))));
+
                 core.notifyApplicationStarted();
             });
 
@@ -65,37 +68,35 @@ define([
             runs(function () {
                 raise('router.disposing');
                 core.notifyApplicationStopped();
-                unregisterStates('t2');
+                unregisterStates('router');
 
                 expect(entered).toHaveBeenCalled();
             });
         });
         
         it('when transition to another state url changes', function () {
-            var entered = jasmine.createSpy();
+            var entered = jasmine.createSpy('b.onEntry');
 
             runs(function () {
-                registerStates('root', state('t3', routerState(document.location.pathname.substring(1))));
-                registerStates('router',
-                    state('x',
-                        state('a', route('/'), on('s', goto('b'))),
-                        state('b', route('b'), onEntry(entered))));
+                registerStates('root', 
+                    routerState({ baseUrl: baseUrl() },
+                        state('x',
+                            state('a', route('/'), on('s', goto('b'))),
+                            state('b', route('b'), onEntry(entered)))));
                 core.notifyApplicationStarted();
             });
 
             waits(100);
 
             runs(function () {
-                console.log('--->raising "s"');
                 raise('s');
-                console.log('--->done raising "s"');
 
                 expect(entered).toHaveBeenCalled();
                 expect(/\?b$/.test(document.location.href)).toBeTruthy();
 
                 raise('router.disposing');
                 core.notifyApplicationStopped();
-                unregisterStates('t3');
+                unregisterStates('router');
 
             });
         });

@@ -59,18 +59,18 @@ define('scalejs.routing-historyjs/routing',[
     history
 ) {
     
-
     var has = core.object.has,
         is = core.type.is,
+        toArray = core.array.toArray,
         on = core.state.builder.on,
         gotoInternally = core.state.builder.gotoInternally,
-        registerTransition = core.state.registerTransition,
         onEntry = core.state.builder.onEntry,
         state = core.state.builder.state,
         raise = core.state.raise,
         $yield = core.functional.builder.$yield,
         observeState = core.state.observe,
         routedStates = {},
+        routerTransitions = [],
         first = true;
 
     function deserialize(string) {
@@ -174,15 +174,6 @@ define('scalejs.routing-historyjs/routing',[
         window.history.go(has(steps) ? -steps : -1);
     }
     */
-    /*
-    //removes hash from url
-    function removeHash() {
-        history.replace({
-            data: "",
-            title: document.title,
-            url: window.location.pathname + window.location.search
-        });
-    }*/
 
     //creates a route function for statechart
     function route(location, func) {
@@ -192,71 +183,86 @@ define('scalejs.routing-historyjs/routing',[
 
         return $yield(function (s) {
             routedStates[s.id] = { location: location, query: func };
-            registerTransition('router',
+            //registerTransition('router',
+            routerTransitions.push(
                 on('routed', function (e) {
                     return e.data.location === location;
-                }, gotoInternally(s.id)));
+                }, gotoInternally(s.id))
+            );
             //on(location + '.routed', gotoInternally(s.id)));
         });
     }
 
-    //creates a routed state for statechart
-    function routerState(baseUrl) {
-        var disposable = new core.reactive.CompositeDisposable();
+    function observeHistory() {
+        return history
+            .observe()
+            .select(convertHistoryEventToNavigatonEvent);
+    }
 
-        function observeHistory() {
-            return history
-                .observe()
-                .select(convertHistoryEventToNavigatonEvent);
+    function routerState(optsOrBuilders) {
+        var disposable = new core.reactive.CompositeDisposable(),
+            router,
+            baseUrl,
+            builders;
+
+        if (has(optsOrBuilders, 'baseUrl')) {
+            baseUrl = optsOrBuilders.baseUrl;
+            builders = toArray(arguments).slice(1, arguments.length);
+        } else {
+            builders = toArray(arguments);
         }
 
-        return state('router',
-            onEntry(function () {
-                var curr;
+        function subscribeRouter() {
+            var curr;
 
-                function isCurrent(url) {
-                    return url === curr;
+            function isCurrent(url) {
+                return url === curr;
+            }
+
+            disposable.add(observeState().subscribe(function (e) {
+                var info,
+                    query;
+
+                if (has(routedStates, e.state) && e.event === 'entry') {
+                    info = routedStates[e.state];
+                    query = info.query.call(e.context);
+                    curr = serialize(info.location, query);
+                    curr = curr === '?/' ? '?' : curr; //remove '/' from url so it is blank if we navigate to root(/).
+                    navigate(info.location === '/' ? '' : info.location, query);
+                }
+            }));
+
+            disposable.add(observeHistory().subscribe(function (e) {
+                if (isCurrent(e.url)) { return; } //do not cause statechange if url is the same!
+
+                var query = e.query || {},
+                    location = e.location || '/';
+
+                if (has(baseUrl)) {
+                    location = location.replace(new RegExp(baseUrl, "i"), '');
                 }
 
-                disposable.add(observeState().subscribe(function (e) {
-                    var info,
-                        query;
+                raise('routed', { location: location || '/', query: query }, 0);
+            }));
+        }
 
-                    if (has(routedStates, e.state) && e.event === 'entry') {
-                        info = routedStates[e.state];
-                        query = info.query.call(e.context);
-                        curr = serialize(info.location, query);
-                        curr = curr === '?/' ? '?' : curr; //remove '/' from url so it is blank if we navigate to root(/).
-                        navigate(info.location === '/' ? '' : info.location, query);
-                    }
-                }));
-
-                disposable.add(observeHistory().subscribe(function (e) {
-                    if (isCurrent(e.url)) { return; } //do not cause statechange if url is the same!
-
-                    var query = e.query || {},
-                        location = e.location || '/';
-
-                    if (has(baseUrl)) {
-                        location = location.replace(new RegExp(baseUrl, "i"), '');
-                    }
-
-                    raise('routed', { location: location || '/', query: query }, 0);
-                }));
-            }),
-
+        router = state.apply(null, [
+            'router',
+            onEntry(subscribeRouter),
             on('router.disposing', gotoInternally('router.disposed')),
-
             state('router.waiting'),
             state('router.disposed', onEntry(function () {
                 disposable.dispose();
-            })));
+                routedStates = {};
+                routerTransitions = [];
+            }))
+        ].concat(routerTransitions)
+            .concat(builders));
+
+        return router;
     }
 
     return {
-        //observe: observe,
-        //navigate: navigate,
-        //removeHash: removeHash,
         //back: back,
         route: route,
         routerState: routerState
