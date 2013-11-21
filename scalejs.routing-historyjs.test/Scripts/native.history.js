@@ -61,6 +61,14 @@
                     History.Adapter.trigger(element, eventName, event);
                 };
             })(element, eventName);
+
+            return uid;
+        },
+
+        unbind: function (uid) {
+            if (History.Adapter.handlers) {
+                delete History.Adapter.handlers[uid];
+            }
         },
 
         /**

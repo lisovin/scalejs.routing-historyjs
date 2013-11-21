@@ -10,15 +10,15 @@ define([
     'use strict';
 
     function add(state) {
-        History.pushState(state.data, state.title, state.url);
+        return History.pushState(state.data, state.title, state.url);
     }
 
     function get() {
-        History.getState();
+        return History.getState();
     }
 
     function replace(state) {
-        History.replaceState(state.data, state.title, state.url);
+        return History.replaceState(state.data, state.title, state.url);
     }
 
     function observe() {
@@ -26,14 +26,14 @@ define([
             disposable = core.reactive.Disposable;
 
         return observable.createWithDisposable(function (observer) {
-            var subscription = History.Adapter.bind(window, 'statechange', function () {
-                observer.onNext(History.getState());
+            var subId = History.Adapter.bind(window, 'statechange', function () {
+                observer.onNext(get());
             });
 
             return disposable.create(function () {
-                subscription.detach();
+                History.Adapter.unbind(subId);
             });
-        }).publishValue(History.getState())
+        }).publishValue(get())
             .refCount();
     }
 

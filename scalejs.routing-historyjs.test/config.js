@@ -1,5 +1,10 @@
 var require = {
     "baseUrl":  ".",
+    "config":  {
+        "scalejs.statechart-scion":  {
+            "logStatesEnteredAndExited":  true
+        }
+    },
     "paths":  {
         "history":  "Scripts/native.history",
         "jasmine":  "Scripts/jasmine",

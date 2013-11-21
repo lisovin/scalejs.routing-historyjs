@@ -8,19 +8,6 @@ define([
 ) {
     'use strict';
 
-    var extend = core.object.extend;
-
-    function buildCore() {
-        extend(core, { routing: routing(core) });
-    }
-
-    function buildSandbox(sandbox) {
-        extend(sandbox, { routing: core.routing });
-    }
-
-    core.registerExtension({
-        buildCore: buildCore,
-        buildSandbox: buildSandbox
-    });
+    core.registerExtension({ routing: routing });
 });
 
