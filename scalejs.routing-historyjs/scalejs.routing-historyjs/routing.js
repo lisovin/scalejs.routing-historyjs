@@ -20,6 +20,8 @@ define([
         raise = core.state.raise,
         $yield = core.functional.builder.$yield,
         observeState = core.state.observe,
+        registerTransition = core.state.registerTransition,
+        router,
         routedStates = {},
         routerTransitions = [],
         first = true;
@@ -68,7 +70,11 @@ define([
     }
 
     function convertHistoryEventToNavigatonEvent(evt) {
-        var location, url = evt.hash.replace("/", "");
+        var location,
+            url = evt.hash
+                .replace(/x-wmapp0:www\/x-wmapp0:www\/x-wmapp0:www\/index\.html/i, '')
+                .replace(/index\.release\.html/i, '')
+                .replace("/", "");
 
         if (url.indexOf('.') === 0) {
             url = url.substr(1, url.length - 1);
@@ -134,13 +140,20 @@ define([
 
         return $yield(function (s) {
             routedStates[s.id] = { location: location, query: func };
-            //registerTransition('router',
-            routerTransitions.push(
+            var transition =
+
                 on('routed', function (e) {
                     return e.data.location === location;
-                }, gotoInternally(s.id))
-            );
-            //on(location + '.routed', gotoInternally(s.id)));
+                }, gotoInternally(s.id));
+
+            // if router is already created then register a transition
+            // otherwise (e.g. we are building substates of router state)
+            // add it to array for later registration
+            if (router) {
+                registerTransition('router', transition);
+            } else {
+                routerTransitions.push(transition);
+            }
         });
     }
 
@@ -151,8 +164,13 @@ define([
     }
 
     function routerState(optsOrBuilders) {
+        // There can be only one...
+        if (router) {
+            return router;
+        }
+
         var disposable = new core.reactive.CompositeDisposable(),
-            router,
+
             baseUrl,
             builders;
 
