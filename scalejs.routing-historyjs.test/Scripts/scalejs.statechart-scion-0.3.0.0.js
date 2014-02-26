@@ -487,14 +487,14 @@ define('scalejs.statechart-scion/state',[
         function observe() {
             return core.reactive.Observable.create(function (o) {
                 var l = {
-                    onEntry: function (state) {
-                        o.onNext({ event: 'entry', state: state, context: this });
+                    onEntry: function (state, e) {
+                        o.onNext({ event: 'entry', state: state, context: this, currentEvent: e });
                     },
-                    onExit: function (state) {
-                        o.onNext({ event: 'exit', state: state });
+                    onExit: function (state, e) {
+                        o.onNext({ event: 'exit', state: state, currentEvent: e });
                     },
-                    onTransition: function (source, targets) {
-                        o.onNext({ event: 'transition', source: source, targets: targets });
+                    onTransition: function (source, targets, e) {
+                        o.onNext({ event: 'transition', source: source, targets: targets, currentEvent: e });
                     }
                 };
                 applicationStatechart.registerListener(l);

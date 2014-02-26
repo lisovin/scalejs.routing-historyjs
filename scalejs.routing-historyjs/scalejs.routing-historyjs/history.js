@@ -31,7 +31,7 @@ define([
             });
 
             return disposable.create(function () {
-                History.Adapter.unbind(subId);
+                window.onstatechange = null;
             });
         }).publishValue(get())
             .refCount();

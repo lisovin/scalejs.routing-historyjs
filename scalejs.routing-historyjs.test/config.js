@@ -16,6 +16,7 @@ var require = {
         "rx.experimental":  "Scripts/rx.experimental",
         "rx.joinpatterns":  "Scripts/rx.joinpatterns",
         "rx.time":  "Scripts/rx.time",
+        "sandbox":  "Scripts/scalejs.sandbox",
         "scalejs":  "Scripts/scalejs-0.3.0.0",
         "scalejs.functional":  "Scripts/scalejs.functional-0.2.9.8",
         "scalejs.linq-linqjs":  "Scripts/scalejs.linq-linqjs-3.0.3.1",
@@ -27,8 +28,10 @@ var require = {
     "scalejs":  {
         "extensions":  [
             "scalejs.functional",
+            "scalejs.functional",
             "scalejs.linq-linqjs",
             "scalejs.reactive",
+            "scalejs.routing-historyjs",
             "scalejs.routing-historyjs",
             "scalejs.statechart-scion"
         ]

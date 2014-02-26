@@ -10,8 +10,10 @@ define([
     history
 ) {
     'use strict';
+
     var has = core.object.has,
         is = core.type.is,
+        merge = core.object.merge,
         toArray = core.array.toArray,
         on = core.state.builder.on,
         gotoInternally = core.state.builder.gotoInternally,
@@ -20,142 +22,10 @@ define([
         raise = core.state.raise,
         $yield = core.functional.builder.$yield,
         observeState = core.state.observe,
-        registerTransition = core.state.registerTransition,
-        router,
         routedStates = {},
         routerTransitions = [],
-        first = true;
-
-    function deserialize(string) {
-        var pairs = string.split("&"),
-            data = {};
-
-        pairs.forEach(function (pair) {
-            pair = pair.split("=");
-            data[pair[0]] = decodeURIComponent(pair[1]);
-        });
-
-        return data;
-    }
-
-    function serialize(location, query) {
-        var url = "",
-            params = [];
-
-        function s(kv, base) {
-            var keys = Object.keys(kv);
-            if (!has(base)) {
-                base = "";
-            }
-            keys.forEach(function (key) {
-                if (is(kv[key], 'object')) {
-                    s(kv[key], key);
-                } else if (is(kv[key], 'array')) {
-                    params.push(base + encodeURIComponent(key) + "=" + encodeURIComponent(kv[key].join(",")));
-                } else {
-                    params.push(base + encodeURIComponent(key) + "=" + encodeURIComponent(kv[key]));
-                }
-            });
-        }
-
-        if (has(location)) {
-            url = "?" + location;
-        }
-        if (has(query)) {
-            url += "?";
-            s(query);
-            url += params.join("&");
-        }
-        return url;
-    }
-
-    function convertHistoryEventToNavigatonEvent(evt) {
-        var location,
-            url = evt.hash
-                .replace(/x-wmapp0:www\/x-wmapp0:www\/x-wmapp0:www\/index\.html/i, '')
-                .replace(/index\.release\.html/i, '')
-                .replace("/", "");
-
-        if (url.indexOf('.') === 0) {
-            url = url.substr(1, url.length - 1);
-        }
-
-        if (url.indexOf('?') !== 0 && url.indexOf('?') !== -1) {
-            url = url.substr(url.indexOf('?'), url.length - 1);
-        }
-
-        evt = url.replace("?", "");
-        if (evt === "") {
-            return {
-                url: url,
-                timestamp: new Date().getTime()
-            };
-        }
-
-        evt = evt.split("?");
-        if (evt[0].indexOf("&") !== -1) {
-            return {
-                query: deserialize(evt[0]),
-                url: url,
-                timestamp: new Date().getTime()
-            };
-        }
-        location = decodeURIComponent(evt[0]);
-        if (has(evt[1])) {
-            return {
-                location: location,
-                query: deserialize(evt[1]),
-                url: url,
-                timestamp: new Date().getTime()
-            };
-        }
-        return {
-            location: location,
-            url: url,
-            timestamp: new Date().getTime()
-        };
-    }
-
-    //changes url
-    function navigate(location, query) {
-        if (first) {
-            first = false;
-            history.replace({ url: serialize(location, query) });
-        } else {
-            history.add({ url: serialize(location, query) });
-        }
-    }
-    /*
-    //goes back in history
-    function back(steps) {
-        window.history.go(has(steps) ? -steps : -1);
-    }
-    */
-
-    //creates a route function for statechart
-    function route(location, func) {
-        /*ignore jslint start*/
-        func = func || function () { return undefined; };
-        /*ignore jslint end*/
-
-        return $yield(function (s) {
-            routedStates[s.id] = { location: location, query: func };
-            var transition =
-
-                on('routed', function (e) {
-                    return e.data.location === location;
-                }, gotoInternally(s.id));
-
-            // if router is already created then register a transition
-            // otherwise (e.g. we are building substates of router state)
-            // add it to array for later registration
-            if (router) {
-                registerTransition('router', transition);
-            } else {
-                routerTransitions.push(transition);
-            }
-        });
-    }
+        first = true,
+        baseUrl;
 
     function observeHistory() {
         return history
@@ -163,22 +33,97 @@ define([
             .select(convertHistoryEventToNavigatonEvent);
     }
 
-    function routerState(optsOrBuilders) {
-        // There can be only one...
-        if (router) {
-            return router;
+    function isBlank(url) {
+        return url === '/' || url === '?' || url === '';
+    }
+
+    function serialize(data) {
+        var url = "?" + data.path.join("/");
+
+        if (has(data.parameters)) {
+            url += "?" + Object.keys(data.parameters).map(function (k) {
+                return k + "=" + data.parameters[k];
+            }).join("&");
         }
 
-        var disposable = new core.reactive.CompositeDisposable(),
+        return url;
+    }
 
-            baseUrl,
+    function deserialize(url) {
+        var data = isBlank(url) ? [['']] : url.split("?")
+            .filter(function (p) { return p !== "" })
+            .map(function (d, i) {
+                if (i === 0) {
+                    return d.split("/");
+                }
+                return d.split("&");
+            });
+
+        return {
+            path: data[0],
+            parameters: has(data[1]) ? data[1].reduce(function (acc, x) {
+                var pair = x.split("=");
+                acc[pair[0]] = pair[1];
+                return acc;
+            }, {}) : undefined
+        };
+    }
+
+    function convertHistoryEventToNavigatonEvent(evt) {
+        var url = evt.hash.replace(baseUrl, ""),
+            data = deserialize(url);
+
+        return merge(data, {
+            url: serialize(data),
+            timestamp: new Date().getTime()
+        })
+    }
+
+    function removeBrackets(x) {
+        return is(x, 'string') ? x.replace("{", "").replace("}", "") : x;
+    }
+
+    function route(r) {
+        var data = deserialize(r);
+
+
+        return $yield(function (s) {
+            routedStates[s.id] = data;
+
+            routerTransitions.push(
+                on('routed', function (e) {
+                    if (e.data.path[0] === data.path[0]) {
+                        data.path.slice(1).forEach(function (p, i) {
+                            e.data[removeBrackets(p)] = e.data.path[i + 1]
+                        });
+                        e.data = merge(e.data, e.data.parameters);
+                        return true;
+                    }
+                    return false;
+                }, gotoInternally(s.id))
+            );
+        });
+    }
+
+    function navigate(data) {
+        if (first) {
+            first = false;
+            history.replace({ url: serialize(data) });
+        } else {
+            history.add({ url: serialize(data) });
+        }
+    }
+
+    function routerState(sid, optsOrBuilders) {
+        var disposable = new core.reactive.CompositeDisposable(),
+            router,
             builders;
 
         if (has(optsOrBuilders, 'baseUrl')) {
             baseUrl = optsOrBuilders.baseUrl;
-            builders = toArray(arguments).slice(1, arguments.length);
+            builders = toArray(arguments).slice(2, arguments.length);
         } else {
-            builders = toArray(arguments);
+            builders = toArray(arguments).slice(1, arguments.length);
         }
 
         function subscribeRouter() {
@@ -189,37 +134,42 @@ define([
             }
 
             disposable.add(observeState().subscribe(function (e) {
-                var info,
-                    query;
+                var data;
 
                 if (has(routedStates, e.state) && e.event === 'entry') {
-                    info = routedStates[e.state];
-                    query = info.query.call(e.context);
-                    curr = serialize(info.location, query);
-                    curr = curr === '?/' ? '?' : curr; //remove '/' from url so it is blank if we navigate to root(/).
-                    navigate(info.location === '/' ? '' : info.location, query);
+                    data = routedStates[e.state];
+
+                    data.path = data.path.map(function (p) {
+                        var pkey = p.match(/[^{}]+(?=\})/);
+                        if (has(pkey)) {
+                            return e.currentEvent.data[pkey[0]]
+                        }
+                        return p;
+                    });
+
+                    if (has(data.parameters)) {
+                        Object.keys(data.parameters).forEach(function (p) {
+                            data.parameters[p] = e.currentEvent.data[removeBrackets(data.parameters[p])];
+                        });
+                    }
+
+                    navigate(data);
                 }
             }));
 
             disposable.add(observeHistory().subscribe(function (e) {
                 if (isCurrent(e.url)) { return; } //do not cause statechange if url is the same!
+                curr = e.url;
 
-                var query = e.query || {},
-                    location = e.location || '/';
-
-                if (has(baseUrl)) {
-                    location = location.replace(new RegExp(baseUrl, "i"), '');
-                }
-
-                raise('routed', { location: location || '/', query: query }, 0);
+                // needs a delay of 0 so that the transition is defined on the parent state
+                raise('routed', { path: e.path, parameters: e.parameters }, 0);
             }));
         }
 
         router = state.apply(null, [
-            'router',
-            onEntry(subscribeRouter),
+            sid,
             on('router.disposing', gotoInternally('router.disposed')),
-            state('router.waiting'),
+            state('router.waiting', onEntry(subscribeRouter)),
             state('router.disposed', onEntry(function () {
                 disposable.dispose();
                 routedStates = {};

@@ -1,6 +1,6 @@
 
 /*global define,window*/
-define('scalejs.routing-historyjs/history', [
+define('scalejs.routing-historyjs/history',[
     'scalejs!core',
     'history',
     'scalejs.reactive'
@@ -8,7 +8,7 @@ define('scalejs.routing-historyjs/history', [
     core,
     History
 ) {
-
+    
 
     function add(state) {
         return History.pushState(state.data, state.title, state.url);
@@ -49,7 +49,7 @@ define('scalejs.routing-historyjs/history', [
 
 /*global define,window,document*/
 /*jslint todo:true*/
-define('scalejs.routing-historyjs/routing', [
+define('scalejs.routing-historyjs/routing',[
     'scalejs!core',
     './history',
     'scalejs.statechart-scion',
@@ -58,6 +58,7 @@ define('scalejs.routing-historyjs/routing', [
     core,
     history
 ) {
+    
 
     var has = core.object.has,
         is = core.type.is,
@@ -237,14 +238,14 @@ define('scalejs.routing-historyjs/routing', [
 });
 
 /*global define*/
-define('scalejs.routing-historyjs', [
+define('scalejs.routing-historyjs',[
     'scalejs!core',
     './scalejs.routing-historyjs/routing'
 ], function (
     core,
     routing
 ) {
-
+    
 
     core.registerExtension({ routing: routing });
 });

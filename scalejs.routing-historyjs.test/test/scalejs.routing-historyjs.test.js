@@ -3,8 +3,9 @@
 /// <reference path="../Scripts/jasmine.js"/>
 define([
     'scalejs!core',
+    'history',
     'scalejs!application'
-], function (core) {
+], function (core, History) {
     describe('routing', function () {
         var // imports
             registerStates = core.state.registerStates,
@@ -21,9 +22,13 @@ define([
             routerState = core.routing.routerState;
 
         function baseUrl() {
-            var base = document.location.href.split('?')[1];
+            return '/C:/git/scalejs.routing-historyjs/scalejs.routing-historyjs.test/index.test.html'
+        }
 
-            return base ? decodeURIComponent(base) : document.location.pathname.substring(1);
+        function disposeRouterAndStates() {
+            raise('router.disposing');
+            core.notifyApplicationStopped();
+            unregisterStates('x');
         }
 
         it('is defined in the core', function () {
@@ -34,8 +39,10 @@ define([
             var entered = jasmine.createSpy('t1.entered');
 
             runs(function () {
+                History.replaceState(null, null, "?");
+
                 registerStates('root',
-                    routerState({ baseUrl: baseUrl() }, 
+                    routerState('x', { baseUrl: baseUrl() },
                         state('t1', route('/'), onEntry(entered))));
                 core.notifyApplicationStarted();
             });
@@ -43,12 +50,9 @@ define([
             waits(100);
 
             runs(function () {
-                raise('router.disposing');
-
-                core.notifyApplicationStopped();
-                unregisterStates('router');
-
                 expect(entered).toHaveBeenCalled();
+
+                disposeRouterAndStates();
             });
         });
 
@@ -57,32 +61,28 @@ define([
 
             runs(function () {
                 registerStates('root',
-                    routerState({ baseUrl: baseUrl() },
+                    routerState('x', { baseUrl: baseUrl() },
                         state('t2', route('/'), onEntry(entered))));
-
                 core.notifyApplicationStarted();
             });
 
             waits(100);
 
             runs(function () {
-                raise('router.disposing');
-                core.notifyApplicationStopped();
-                unregisterStates('router');
-
                 expect(entered).toHaveBeenCalled();
+
+                disposeRouterAndStates();
             });
         });
         
-        it('when transition to another state url changes', function () {
+        it('when transition to state with route `b`, url becomes `?b`', function () {
             var entered = jasmine.createSpy('b.onEntry');
 
             runs(function () {
                 registerStates('root', 
-                    routerState({ baseUrl: baseUrl() },
-                        state('x',
+                    routerState('x', { baseUrl: baseUrl() },
                             state('a', route('/'), on('s', goto('b'))),
-                            state('b', route('b'), onEntry(entered)))));
+                            state('b', route('b'), onEntry(entered))));
                 core.notifyApplicationStarted();
             });
 
@@ -94,10 +94,255 @@ define([
                 expect(entered).toHaveBeenCalled();
                 expect(/\?b$/.test(document.location.href)).toBeTruthy();
 
-                raise('router.disposing');
-                core.notifyApplicationStopped();
-                unregisterStates('router');
+                disposeRouterAndStates();
+            });
+        }); 
 
+        it('when url `?b` is entered, transitions to appropriate state', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry');
+
+            runs(function () {
+                History.replaceState(null, null, "?b");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/')),
+                        state('b', route('b'), onEntry(entered))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+                expect(entered).toHaveBeenCalled();
+                expect(/\?b$/.test(document.location.href)).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when transition to another state with route `b/{x}` and x=1, url becomes `?b/1`', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry');
+
+            runs(function () {
+                History.replaceState(null, null, "?");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}'), onEntry(entered))));
+                core.notifyApplicationStarted();
+
+            });
+
+            waits(100);
+
+            runs(function () {
+                raise("s", { x: 1 });
+
+                expect(entered).toHaveBeenCalled();
+                expect(/\?b\/1$/.test(document.location.href)).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when url `?b/1` is entered, transitions to appropriate state and passes data', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry'),
+                data;
+
+            runs(function () {
+                History.replaceState(null, null, "?b/1");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}'), onEntry(function (e) {
+                            data = e.data;
+                            entered();
+                        }))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+                expect(entered).toHaveBeenCalled();
+                expect(data = { x: '1' }).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when transition to another state with route `b/{x}/{y}` and x = 1, y = 2, url becomes `?b/1/2`', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry');
+
+            runs(function () {
+                History.replaceState(null, null, "?");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}/{y}'), onEntry(entered))));
+                core.notifyApplicationStarted();
+
+            });
+
+            waits(100);
+
+            runs(function () {
+                raise("s", { x: 1, y: 2 });
+
+                expect(entered).toHaveBeenCalled();
+                expect(/\?b\/1\/2$/.test(document.location.href)).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when url `?b/1/2` is entered, transitions to appropriate state and passes data', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry'),
+                data;
+
+            runs(function () {
+                History.replaceState(null, null, "?b/1/2");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}/{y}'), onEntry(function (e) {
+                            data = e.data;
+                            entered();
+                        }))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+                expect(entered).toHaveBeenCalled();
+                expect(data = { x: '1', y: '2' }).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when transition to another state with parameters `b?x={y}`, url changes', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry');
+
+            runs(function () {
+                History.replaceState(null, null, "?");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b?x={y}'), onEntry(entered))));
+                core.notifyApplicationStarted();
+
+            });
+
+            waits(100);
+
+            runs(function () {
+                raise("s", { y: 1 });
+
+                expect(entered).toHaveBeenCalled();
+                expect(/\?b\?x=1$/.test(document.location.href)).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when url `?b?y=1` is entered, transitions to appropriate state and passes data', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry'),
+                data;
+
+            runs(function () {
+                History.replaceState(null, null, "?b/1/2");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b?y={x}'), onEntry(function (e) {
+                            data = e.data;
+                            entered();
+                        }))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+                expect(entered).toHaveBeenCalled();
+                expect(data = { x: '1'}).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when transition to state with route `b/{x}/{y}?z={z}&q={q}`, url is changed', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry'),
+                data;
+
+            runs(function () {
+                History.replaceState(null, null, "?");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}/{y}?z={z}&q={q}'), onEntry(function (e) {
+                            data = e.data;
+                            entered();
+                        }))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+                raise("s", { x: 1, y: 2, z: 3, q: 4 });
+
+                expect(entered).toHaveBeenCalled();
+                expect(/\?b\/1\/2\?z\=3&q\=4$/.test(document.location.href)).toBeTruthy();
+
+                disposeRouterAndStates();
+            });
+        });
+
+        it('when complex url `b/1/2?z=3&q=4` with data is entered transitions, to appropriate state and passes data', function () {
+            var entered = jasmine.createSpy('b.onEntry'),
+                routerEntered = jasmine.createSpy('router.onEntry'),
+                data;
+
+            runs(function () {
+                History.replaceState(null, null, "?b/1/2?z=3&q=4");
+
+                registerStates('root',
+                    routerState('x', { baseUrl: baseUrl() },
+                        state('a', route('/'), on('s', goto('b'))),
+                        state('b', route('b/{x}/{y}?z={z}&q={q}'), onEntry(function (e) {
+                            data = e.data;
+                            entered();
+                        }))));
+                core.notifyApplicationStarted();
+            });
+
+            waits(100);
+
+            runs(function () {
+
+                expect(entered).toHaveBeenCalled();
+                expect(data = { x: 1, y: 2, z: 3, q: 4 }).toBeTruthy();
+
+                disposeRouterAndStates();
             });
         });
     });
