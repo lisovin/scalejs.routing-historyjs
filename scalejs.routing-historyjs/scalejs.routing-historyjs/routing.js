@@ -27,12 +27,6 @@ define([
         first = true,
         baseUrl;
 
-    function observeHistory() {
-        return history
-            .observe()
-            .select(convertHistoryEventToNavigatonEvent);
-    }
-
     function isBlank(url) {
         return url === '/' || url === '?' || url === '';
     }
@@ -49,15 +43,16 @@ define([
         return url;
     }
 
-    function deserialize(url) {
-        var data = isBlank(url) ? [['']] : url.split("?")
-            .filter(function (p) { return p !== "" })
-            .map(function (d, i) {
-                if (i === 0) {
-                    return d.split("/");
-                }
-                return d.split("&");
-            });
+    function deserialize(u) {
+        var url = u.replace("/?"),
+            data = isBlank(url) ? [['']] : url.split("?")
+                .filter(function (p) { return p !== ""; })
+                .map(function (d, i) {
+                    if (i === 0) {
+                        return d.split("/");
+                    }
+                    return d.split("&");
+                });
 
         return {
             path: data[0],
@@ -76,7 +71,13 @@ define([
         return merge(data, {
             url: serialize(data),
             timestamp: new Date().getTime()
-        })
+        });
+    }
+
+    function observeHistory() {
+        return history
+            .observe()
+            .select(convertHistoryEventToNavigatonEvent);
     }
 
     function removeBrackets(x) {

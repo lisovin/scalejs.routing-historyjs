@@ -22,7 +22,6 @@
     <Content Include="Scripts\linq.js" />
     <Content Include="Scripts\linq.js.d.ts" />
     <Content Include="Scripts\linq.min.js" />
-    <None Include="Scripts\native.history.js_" />
     <Content Include="Scripts\native.history.js" />
     <Content Include="Scripts\r.js" />
     <Content Include="Scripts\require.js" />

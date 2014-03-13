@@ -7,10 +7,10 @@ $project |
 	}" |
 	Add-Shims "{
 		'history': {
-			exports: 'History'
+			'exports': 'History'
 		},
 		'scalejs.routing-historyjs': {
-			deps: ['history']
+			'deps': ['history']
 		}
 	}" |
 	Add-ScalejsExtension 'scalejs.routing-historyjs' |
