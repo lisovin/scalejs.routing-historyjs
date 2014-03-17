@@ -21,11 +21,13 @@ define([
         state = core.state.builder.state,
         raise = core.state.raise,
         $yield = core.functional.builder.$yield,
+        registerTransition = core.state.registerTransition,
         observeState = core.state.observe,
         routedStates = {},
         routerTransitions = [],
         first = true,
-        baseUrl;
+        baseUrl,
+        routerStateId;
 
     function isBlank(url) {
         return url === '/' || url === '?' || url === '';
@@ -89,20 +91,25 @@ define([
 
 
         return $yield(function (s) {
+            var transition;
             routedStates[s.id] = data;
 
-            routerTransitions.push(
-                on('routed', function (e) {
-                    if (e.data.path[0] === data.path[0]) {
-                        data.path.slice(1).forEach(function (p, i) {
-                            e.data[removeBrackets(p)] = e.data.path[i + 1]
-                        });
-                        e.data = merge(e.data, e.data.parameters);
-                        return true;
-                    }
-                    return false;
-                }, gotoInternally(s.id))
-            );
+            transition = on('routed', function (e) {
+                if (e.data.path[0] === data.path[0]) {
+                    data.path.slice(1).forEach(function (p, i) {
+                        e.data[removeBrackets(p)] = e.data.path[i + 1]
+                    });
+                    e.data = merge(e.data, e.data.parameters);
+                    return true;
+                }
+                return false;
+            }, gotoInternally(s.id));
+
+            if (routerStateId) {
+                registerTransition(routerStateId, transition);
+            } else {
+                routerTransitions.push(transition);
+            }
         });
     }
 
@@ -120,6 +127,7 @@ define([
             router,
             builders;
 
+        routerStateId = sid;
         if (has(optsOrBuilders, 'baseUrl')) {
             baseUrl = optsOrBuilders.baseUrl;
             builders = toArray(arguments).slice(2, arguments.length);
