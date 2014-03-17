@@ -29,6 +29,12 @@ define([
         baseUrl,
         routerStateId;
 
+    function observeHistory() {
+        return history
+            .observe()
+            .select(convertHistoryEventToNavigatonEvent);
+    }
+
     function isBlank(url) {
         return url === '/' || url === '?' || url === '';
     }
@@ -46,7 +52,7 @@ define([
     }
 
     function deserialize(u) {
-        var url = u.replace("/?"),
+        var url = u.replace("/?", ""),
             data = isBlank(url) ? [['']] : url.split("?")
                 .filter(function (p) { return p !== ""; })
                 .map(function (d, i) {
@@ -76,12 +82,6 @@ define([
         });
     }
 
-    function observeHistory() {
-        return history
-            .observe()
-            .select(convertHistoryEventToNavigatonEvent);
-    }
-
     function removeBrackets(x) {
         return is(x, 'string') ? x.replace("{", "").replace("}", "") : x;
     }
@@ -97,7 +97,7 @@ define([
             transition = on('routed', function (e) {
                 if (e.data.path[0] === data.path[0]) {
                     data.path.slice(1).forEach(function (p, i) {
-                        e.data[removeBrackets(p)] = e.data.path[i + 1]
+                        e.data[removeBrackets(p)] = e.data.path[i + 1];
                     });
                     e.data = merge(e.data, e.data.parameters);
                     return true;
@@ -128,6 +128,7 @@ define([
             builders;
 
         routerStateId = sid;
+
         if (has(optsOrBuilders, 'baseUrl')) {
             baseUrl = optsOrBuilders.baseUrl;
             builders = toArray(arguments).slice(2, arguments.length);
@@ -151,7 +152,7 @@ define([
                     data.path = data.path.map(function (p) {
                         var pkey = p.match(/[^{}]+(?=\})/);
                         if (has(pkey)) {
-                            return e.currentEvent.data[pkey[0]]
+                            return e.currentEvent.data[pkey[0]];
                         }
                         return p;
                     });
