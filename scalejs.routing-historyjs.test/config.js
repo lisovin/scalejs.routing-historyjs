@@ -33,6 +33,8 @@ var require = {
             "scalejs.reactive",
             "scalejs.routing-historyjs",
             "scalejs.routing-historyjs",
+            "scalejs.routing-historyjs",
+            "scalejs.statechart-scion",
             "scalejs.statechart-scion"
         ]
     },
