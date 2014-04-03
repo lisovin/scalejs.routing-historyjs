@@ -52,7 +52,8 @@ define([
     }
 
     function deserialize(u) {
-        var url = u.replace("/?", ""),
+        var url = u.replace(/^\/*/, '') // remove leading /, e.g. /my/module -> my/module
+                   .replace("/?", ""),
             data = isBlank(url) ? [['']] : url.split("?")
                 .filter(function (p) { return p !== ""; })
                 .map(function (d, i) {
