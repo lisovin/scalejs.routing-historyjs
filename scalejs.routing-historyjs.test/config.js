@@ -21,7 +21,7 @@ var require = {
         "scalejs.functional":  "Scripts/scalejs.functional-0.2.9.8",
         "scalejs.linq-linqjs":  "Scripts/scalejs.linq-linqjs-3.0.3.1",
         "scalejs.reactive":  "Scripts/scalejs.reactive-2.1.20.1",
-        "scalejs.routing-historyjs":  "Scripts/scalejs.routing-historyjs-1.8.2.10",
+        "scalejs.routing-historyjs":  "Scripts/scalejs.routing-historyjs-1.8.2.15",
         "scalejs.statechart-scion":  "Scripts/scalejs.statechart-scion-0.3.0.0",
         "scion":  "Scripts/scion"
     },

@@ -49,7 +49,7 @@ define([
             if (e.event !== 'entry') { return; }
 
             // try map data to url with the router
-            url = router.tryToUrl(e.state, e.currentEvent.data);
+            url = router.tryToUrl(e.state, e.currentEvent ? e.currentEvent.data : null);
 
             // if mapping succeded then navigate to url
             if (url) {
@@ -82,7 +82,7 @@ define([
             // create transition that would trigger on 'routed' event and will attempt to parse the url
             transition = on('routed', function (e) {
                 // if path of the 'routed' event matches the route then transition is active
-                var parsed = router.tryFromUrl(s.id, e.data.path);
+                var parsed = router.tryFromUrl(s.id, e.data.url);
 
                 if (parsed) {
                     extend(e.data, parsed);

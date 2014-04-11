@@ -10,7 +10,7 @@ define([
     'use strict';
 
     var routes = {},
-        baseUrl;
+        baseUrl = '';
 
     function addRoute(routeName, route) {
         var mapper = routeMapper(route);
@@ -44,7 +44,8 @@ define([
     }
 
     function setBaseUrl(newBaseUrl) {
-        baseUrl = newBaseUrl;
+        baseUrl = newBaseUrl || '';
+        baseUrl = baseUrl.replace(/\/*$/, '');
     }
 
     return {

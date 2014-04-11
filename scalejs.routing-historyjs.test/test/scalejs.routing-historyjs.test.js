@@ -23,6 +23,13 @@ define([
         routerState = core.routing.routerState;
 
     describe('router mapping fromUrl', function () {
+        it('/foo/bar', function () {
+            var m = routeMapper('/foo/bar');
+
+            expect(m.fromUrl('/foo/bar')).toEqual({ });
+            expect(m.fromUrl('/foo/bar?abc=xyz&def=1.0')).toEqual({ abc: 'xyz', def: '1.0'});
+        });
+
         it('/app/{id}', function () {
             var m = routeMapper('/app/{id}');
 
@@ -71,6 +78,13 @@ define([
     });
 
     describe('router mapping toUrl', function () {
+        it('/foo/bar', function () {
+            var m = routeMapper('/foo/bar');
+
+            expect(m.toUrl({})).toEqual('/foo/bar');
+            expect(m.toUrl({ abc: 'xyz', def: 1.0 })).toEqual('/foo/bar?abc=xyz&def=1');
+        });
+
         it('/app/{id}', function () {
             var m = routeMapper('/app/{id}');
 
@@ -147,7 +161,8 @@ define([
 
         function baseUrl() {
             //return '/C:/git/scalejs.routing-historyjs/scalejs.routing-historyjs.test/index.test.html'
-            return document.location.href;
+            // remove file:// since History.js stripes it away from url
+            return document.location.href.substring(7); 
         }
 
         function disposeRouterAndStates() {
@@ -181,7 +196,7 @@ define([
                 disposeRouterAndStates();
             });
         });
-
+        
         it('when application starts again root state gets entered again', function () {
             var entered = jasmine.createSpy('t2.onEntry');
 

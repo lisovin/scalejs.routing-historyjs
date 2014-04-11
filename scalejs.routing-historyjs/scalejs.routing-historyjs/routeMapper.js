@@ -15,16 +15,21 @@ define([
      */
     return function routeMapper(mapping) {
         var cleanedMapping,
-            routeGroups,
+            routeGroups = [],
             mappingRegex;
+
         function createMappingRegex() {
-            var mappingRegexText;
+            var routeGroupsMatches,
+                mappingRegexText;
+
             cleanedMapping = mapping.replace(/^\/*|[/?]*$/g, ''); // strip leading '/' and ending '/' and '?'
-            routeGroups = cleanedMapping
-                .match(/{([^}])*}/g)
-                .map(function (m) {
+
+            routeGroupsMatches = cleanedMapping.match(/{([^}])*}/g);
+            if (routeGroupsMatches) {
+                routeGroups = routeGroupsMatches.map(function (m) {
                     return m.replace(/[{}]/g, '');
                 });
+            }
 
             mappingRegexText = '^[/]*' + cleanedMapping.replace(/{[^}]*}/g, '(.+?)') + '[?/]*$';
 
@@ -67,7 +72,7 @@ define([
         }
 
         function toUrl(data) {
-            data = clone(data);
+            data = data ? clone(data) : {};
 
             var path,
                 query = {};
