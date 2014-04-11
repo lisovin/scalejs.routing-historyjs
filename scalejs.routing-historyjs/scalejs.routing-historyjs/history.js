@@ -26,7 +26,7 @@ define([
             disposable = core.reactive.Disposable;
 
         return observable.createWithDisposable(function (observer) {
-            var subId = History.Adapter.bind(window, 'statechange', function () {
+            History.Adapter.bind(window, 'statechange', function () {
                 observer.onNext(get());
             });
 

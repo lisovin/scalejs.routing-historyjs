@@ -3,17 +3,18 @@
 define([
     'scalejs!core',
     './history',
+    './router',
     'scalejs.statechart-scion',
     'scalejs.reactive'
 ], function (
     core,
-    history
+    history,
+    router
 ) {
     'use strict';
 
     var has = core.object.has,
-        is = core.type.is,
-        merge = core.object.merge,
+        extend = core.object.extend,
         toArray = core.array.toArray,
         on = core.state.builder.on,
         gotoInternally = core.state.builder.gotoInternally,
@@ -23,89 +24,75 @@ define([
         $yield = core.functional.builder.$yield,
         registerTransition = core.state.registerTransition,
         observeState = core.state.observe,
-        routedStates = {},
+        // properties
+        routerStateId,
         routerTransitions = [],
-        first = true,
-        baseUrl,
-        routerStateId;
+        disposable = new core.reactive.CompositeDisposable(),
+        firstNavigation = true;
 
-    function observeHistory() {
-        return history
-            .observe()
-            .select(convertHistoryEventToNavigatonEvent);
-    }
-
-    function isBlank(url) {
-        return url === '/' || url === '?' || url === '';
-    }
-
-    function serialize(data) {
-        var url = "?" + data.path.join("/");
-
-        if (has(data.parameters)) {
-            url += "?" + Object.keys(data.parameters).map(function (k) {
-                return k + "=" + data.parameters[k];
-            }).join("&");
+    function navigate(url) {
+        if (firstNavigation) {
+            firstNavigation = false;
+            history.replace({ url: url });
+        } else {
+            history.add({ url: url });
         }
-
-        return url;
     }
 
-    function deserialize(u) {
-        var url = u.replace(/^\/*/, '') // remove leading /, e.g. /my/module -> my/module
-                   .replace("/?", ""),
-            data = isBlank(url) ? [['']] : url.split("?")
-                .filter(function (p) { return p !== ""; })
-                .map(function (d, i) {
-                    if (i === 0) {
-                        return d.split("/");
-                    }
-                    return d.split("&");
-                });
+    function setupRouting() {
+        var currentUrl;
 
-        return {
-            path: data[0],
-            parameters: has(data[1]) ? data[1].reduce(function (acc, x) {
-                var pair = x.split("=");
-                acc[pair[0]] = pair[1];
-                return acc;
-            }, {}) : undefined
-        };
+        disposable.add(observeState().subscribe(function (e) {
+            var url;
+
+            // do routing on state entry
+            if (e.event !== 'entry') { return; }
+
+            // try map data to url with the router
+            url = router.tryToUrl(e.state, e.currentEvent.data);
+
+            // if mapping succeded then navigate to url
+            if (url) {
+                navigate(url);
+            }
+        }));
+
+        disposable.add(history.observe().subscribe(function (e) {
+            var url = e.hash;
+
+            if (currentUrl === url) { return; } //do not cause statechange if url is the same
+            currentUrl = url;
+
+            // needs a delay of 0 so that the transition is defined on the parent state
+            raise('routed', { url: url }, 0);
+        }));
     }
 
-    function convertHistoryEventToNavigatonEvent(evt) {
-        var url = evt.hash.replace(baseUrl, ""),
-            data = deserialize(url);
-
-        return merge(data, {
-            url: serialize(data),
-            timestamp: new Date().getTime()
-        });
+    function disposeRouting() {
+        disposable.dispose();
+        //routerTransitions = [];
     }
 
-    function removeBrackets(x) {
-        return is(x, 'string') ? x.replace("{", "").replace("}", "") : x;
-    }
-
-    function route(r) {
-        var data = deserialize(r);
-
-
+    function route(routeDef) {
         return $yield(function (s) {
             var transition;
-            routedStates[s.id] = data;
 
+            // add route for this state to router
+            router.addRoute(s.id, routeDef);
+            // create transition that would trigger on 'routed' event and will attempt to parse the url
             transition = on('routed', function (e) {
-                if (e.data.path[0] === data.path[0]) {
-                    data.path.slice(1).forEach(function (p, i) {
-                        e.data[removeBrackets(p)] = e.data.path[i + 1];
-                    });
-                    e.data = merge(e.data, e.data.parameters);
+                // if path of the 'routed' event matches the route then transition is active
+                var parsed = router.tryFromUrl(s.id, e.data.path);
+
+                if (parsed) {
+                    extend(e.data, parsed);
                     return true;
                 }
-                return false;
             }, gotoInternally(s.id));
 
+            // if router state is already added then register transition on that state
+            // otherwise add transition to the list of transitions to be registered once 
+            // the router state gets registered
             if (routerStateId) {
                 registerTransition(routerStateId, transition);
             } else {
@@ -114,86 +101,31 @@ define([
         });
     }
 
-    function navigate(data) {
-        if (first) {
-            first = false;
-            history.replace({ url: serialize(data) });
-        } else {
-            history.add({ url: serialize(data) });
-        }
-    }
+    function routerState(stateId, optsOrBuilders) {
+        var builders,
+            builtRouterState;
 
-    function routerState(sid, optsOrBuilders) {
-        var disposable = new core.reactive.CompositeDisposable(),
-            router,
-            builders;
-
-        routerStateId = sid;
+        routerStateId = stateId;
 
         if (has(optsOrBuilders, 'baseUrl')) {
-            baseUrl = optsOrBuilders.baseUrl;
+            router.setBaseUrl(optsOrBuilders.baseUrl);
             builders = toArray(arguments).slice(2, arguments.length);
         } else {
             builders = toArray(arguments).slice(1, arguments.length);
         }
 
-        function subscribeRouter() {
-            var curr;
-
-            function isCurrent(url) {
-                return url === curr;
-            }
-
-            disposable.add(observeState().subscribe(function (e) {
-                var data;
-
-                if (has(routedStates, e.state) && e.event === 'entry') {
-                    data = routedStates[e.state];
-
-                    data.path = data.path.map(function (p) {
-                        var pkey = p.match(/[^{}]+(?=\})/);
-                        if (has(pkey)) {
-                            return e.currentEvent.data[pkey[0]];
-                        }
-                        return p;
-                    });
-
-                    if (has(data.parameters)) {
-                        Object.keys(data.parameters).forEach(function (p) {
-                            data.parameters[p] = e.currentEvent.data[removeBrackets(data.parameters[p])];
-                        });
-                    }
-
-                    navigate(data);
-                }
-            }));
-
-            disposable.add(observeHistory().subscribe(function (e) {
-                if (isCurrent(e.url)) { return; } //do not cause statechange if url is the same!
-                curr = e.url;
-
-                // needs a delay of 0 so that the transition is defined on the parent state
-                raise('routed', { path: e.path, parameters: e.parameters }, 0);
-            }));
-        }
-
-        router = state.apply(null, [
-            sid,
+        builtRouterState = state.apply(null, [
+            routerStateId,
             on('router.disposing', gotoInternally('router.disposed')),
-            state('router.waiting', onEntry(subscribeRouter)),
-            state('router.disposed', onEntry(function () {
-                disposable.dispose();
-                routedStates = {};
-                routerTransitions = [];
-            }))
+            state('router.waiting', onEntry(setupRouting)),
+            state('router.disposed', onEntry(disposeRouting))
         ].concat(routerTransitions)
             .concat(builders));
 
-        return router;
+        return builtRouterState;
     }
 
     return {
-        //back: back,
         route: route,
         routerState: routerState
     };

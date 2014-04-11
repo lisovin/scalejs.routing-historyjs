@@ -1,12 +1,15 @@
 ﻿{
   "output": "Error",
-  "runOnSave": true,
-  "runOnBuild": true,
-  "cancelBuild": false,
   "ignore": [
-    "\\Scripts\\"
+    "\\Scripts\\",
+    "\\scalejs.routing-historyjs\\routing2_.js",
+    "\\scalejs.routing-historyjs\\routing.old.js",
+    "\\scalejs.routing-historyjs\\routeMapper.js"
   ],
   "options": {
     "predef": {}
-  }
+  },
+  "runOnSave": true,
+  "runOnBuild": true,
+  "cancelBuild": false
 }

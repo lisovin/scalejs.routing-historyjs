@@ -4,25 +4,150 @@
 define([
     'scalejs!core',
     'history',
+    'scalejs.routing-historyjs/routeMapper',
+    'scalejs.routing-historyjs/router',
     'scalejs!application'
-], function (core, History) {
+], function (core, History, routeMapper, router) {
+    var // imports
+        registerStates = core.state.registerStates,
+        unregisterStates = core.state.unregisterStates,
+        raise = core.state.raise,
+        state = core.state.builder.state,
+        parallel = core.state.builder.parallel,
+        onEntry = core.state.builder.onEntry,
+        gotoInternally = core.state.builder.gotoInternally,
+        on = core.state.builder.on,
+        goto = core.state.builder.goto,
+        has = core.object.has,
+        route = core.routing.route,
+        routerState = core.routing.routerState;
+
+    describe('router mapping fromUrl', function () {
+        it('/app/{id}', function () {
+            var m = routeMapper('/app/{id}');
+
+            expect(m.fromUrl('/app/1')).toEqual({ id: '1' });
+            expect(m.fromUrl('/app/1/')).toEqual({ id: '1' });
+            expect(m.fromUrl('app/1')).toEqual({ id: '1' });
+            expect(m.fromUrl('app/1?')).toEqual({ id: '1' });
+            expect(m.fromUrl('app/1/?')).toEqual({ id: '1' });
+        });
+
+        it('/app/{id}/', function () {
+            var m = routeMapper('/app/{id}/');
+
+            expect(m.fromUrl('/app/1')).toEqual({ id: '1' });
+        });
+
+        it('/app/{module}/{id}', function () {
+            var m = routeMapper('/app/{module}/{id}');
+
+            expect(m.fromUrl('/app/main/1')).toEqual({ module: 'main', id: '1' });
+        });
+
+        it('/app/{date}', function () {
+            var m = routeMapper('/app/{date}');
+
+            expect(m.fromUrl('/app/2014/1/10')).toEqual({ date: '2014/1/10' });
+        });
+
+        it('/app/{id} fromUrl /app/1?x=1&y=test&z=0.234&y=a/b/c', function () {
+            var m = routeMapper('/app/{id}'),
+                r = m.fromUrl('/app/1?x=1&y=test&z=0.234&q=a/b/c');
+
+            console.log(r);
+
+            expect(r).toEqual({ id: '1', x: '1', y: 'test', z: '0.234', q: 'a/b/c' });
+        });
+
+        it('/app/{id} fromUrl /app/1/?x=1&y=test&z=0.234&y=a/b/c', function () {
+            var m = routeMapper('/app/{id}'),
+                r = m.fromUrl('/app/1/?x=1&y=test&z=0.234&q=a/b/c');
+
+            console.log(r);
+
+            expect(r).toEqual({ id: '1', x: '1', y: 'test', z: '0.234', q: 'a/b/c' });
+        });
+    });
+
+    describe('router mapping toUrl', function () {
+        it('/app/{id}', function () {
+            var m = routeMapper('/app/{id}');
+
+            expect(m.toUrl({ id: 1 })).toEqual('/app/1');
+            expect(m.toUrl({ id: 1, x: 2, y: 'abc', z: 0.234 })).toEqual('/app/1?x=2&y=abc&z=0.234');
+        });
+
+        it('/app/{id}/', function () {
+            var m = routeMapper('/app/{id}/');
+
+            expect(m.toUrl({ id: 1 })).toEqual('/app/1');
+            expect(m.toUrl({ id: 1, x: 2, y: 'abc', z: 0.234 })).toEqual('/app/1?x=2&y=abc&z=0.234');
+        });
+
+        it('/app/{module}/{id}', function () {
+            var m = routeMapper('/app/{module}/{id}');
+
+            expect(m.toUrl({ module: 'main', id: 1 })).toEqual('/app/main/1');
+        });
+    });
+
+    describe('router', function () {
+        beforeEach(function () {
+            router.addRoute('myRoute', '/app/{id}');
+        });
+
+        it('tryToUrl returns `undefined` for unknown route', function () {
+            var url = router.tryToUrl('noRoute', { id: 1 });
+            expect(url).toBeUndefined();
+        });
+
+        it('tryFromUrl returns `undefined` for unknown route', function () {
+            var data = router.tryFromUrl('noRoute', '/app/1');
+            expect(data).toBeUndefined();
+        });
+
+        it('tryToUrl returns url for the known route', function () {
+            var url = router.tryToUrl('myRoute', { id: '1', param: 'abc' });
+            expect(url).toEqual('/app/1?param=abc');
+        });
+
+        it('tryFromUrl returns data for the known route', function () {
+            router.addRoute('myRoute', '/app/{id}');
+            var data = router.tryFromUrl('myRoute', '/app/1?param=abc');
+            expect(data).toEqual({ id: '1', param: 'abc' });
+        });
+
+        it('tryToUrl returns url for the known route with baseUrl not ending with `/`', function () {
+            router.setBaseUrl('/test');
+            var url = router.tryToUrl('myRoute', { id: '1', param: 'abc' });
+            expect(url).toEqual('/test/app/1?param=abc');
+        });
+
+        it('tryFromUrl returns data for the known route with baseUrl not ending with `/`', function () {
+            router.setBaseUrl('/test');
+            var data = router.tryFromUrl('myRoute', '/test/app/1?param=abc');
+            expect(data).toEqual({id: '1', param: 'abc'});
+        });
+
+        it('tryToUrl returns url for the known route with baseUrl ending with `/`', function () {
+            router.setBaseUrl('/test/');
+            var url = router.tryToUrl('myRoute', { id: '1', param: 'abc' });
+            expect(url).toEqual('/test/app/1?param=abc');
+        });
+
+        it('tryFromUrl returns data for the known route with baseUrl ending with `/`', function () {
+            router.setBaseUrl('/test/');
+            var data = router.tryFromUrl('myRoute', '/test/app/1?param=abc');
+            expect(data).toEqual({ id: '1', param: 'abc' });
+        });
+    });
+
     describe('routing', function () {
-        var // imports
-            registerStates = core.state.registerStates,
-            unregisterStates = core.state.unregisterStates,
-            raise = core.state.raise,
-            state = core.state.builder.state,
-            parallel = core.state.builder.parallel,
-            onEntry = core.state.builder.onEntry,
-            gotoInternally = core.state.builder.gotoInternally,
-            on = core.state.builder.on,
-            goto = core.state.builder.goto,
-            has = core.object.has,
-            route = core.routing.route,
-            routerState = core.routing.routerState;
 
         function baseUrl() {
-            return '/C:/git/scalejs.routing-historyjs/scalejs.routing-historyjs.test/index.test.html'
+            //return '/C:/git/scalejs.routing-historyjs/scalejs.routing-historyjs.test/index.test.html'
+            return document.location.href;
         }
 
         function disposeRouterAndStates() {
@@ -30,6 +155,7 @@ define([
             core.notifyApplicationStopped();
             unregisterStates('x');
         }
+
 
         it('is defined in the core', function () {
             expect(core.routing).toBeDefined();

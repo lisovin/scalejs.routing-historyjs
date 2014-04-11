@@ -1,63 +1,17 @@
-
-/*global define,window*/
-define('scalejs.routing-historyjs/history', [
-    'scalejs!core',
-    'history',
-    'scalejs.reactive'
-], function (
-    core,
-    History
-) {
-
-
-    function add(state) {
-        return History.pushState(state.data, state.title, state.url);
-    }
-
-    function get() {
-        return History.getState();
-    }
-
-    function replace(state) {
-        return History.replaceState(state.data, state.title, state.url);
-    }
-
-    function observe() {
-        var observable = core.reactive.Observable,
-            disposable = core.reactive.Disposable;
-
-        return observable.createWithDisposable(function (observer) {
-            var subId = History.Adapter.bind(window, 'statechange', function () {
-                observer.onNext(get());
-            });
-
-            return disposable.create(function () {
-                window.onstatechange = null;
-            });
-        }).publishValue(get())
-            .refCount();
-    }
-
-    return {
-        add: add,
-        get: get,
-        replace: replace,
-        observe: observe
-    };
-});
-
-
-/*global define,window,document*/
+﻿/*global define,window,document*/
 /*jslint todo:true*/
-define('scalejs.routing-historyjs/routing', [
+define([
     'scalejs!core',
     './history',
+    './routeMapper',
     'scalejs.statechart-scion',
     'scalejs.reactive'
 ], function (
     core,
-    history
+    history,
+    routeMapper
 ) {
+    'use strict';
 
     var has = core.object.has,
         is = core.type.is,
@@ -69,17 +23,13 @@ define('scalejs.routing-historyjs/routing', [
         state = core.state.builder.state,
         raise = core.state.raise,
         $yield = core.functional.builder.$yield,
+        registerTransition = core.state.registerTransition,
         observeState = core.state.observe,
         routedStates = {},
         routerTransitions = [],
         first = true,
-        baseUrl;
-
-    function observeHistory() {
-        return history
-            .observe()
-            .select(convertHistoryEventToNavigatonEvent);
-    }
+        baseUrl,
+        routerStateId;
 
     function isBlank(url) {
         return url === '/' || url === '?' || url === '';
@@ -97,15 +47,17 @@ define('scalejs.routing-historyjs/routing', [
         return url;
     }
 
-    function deserialize(url) {
-        var data = isBlank(url) ? [['']] : url.split("?")
-            .filter(function (p) { return p !== "" })
-            .map(function (d, i) {
-                if (i === 0) {
-                    return d.split("/");
-                }
-                return d.split("&");
-            });
+    function deserialize(u) {
+        var url = u.replace(/^\/*/, '') // remove leading /, e.g. /my/module -> my/module
+                   .replace("/?", ""),
+            data = isBlank(url) ? [['']] : url.split("?")
+                .filter(function (p) { return p !== ""; })
+                .map(function (d, i) {
+                    if (i === 0) {
+                        return d.split("/");
+                    }
+                    return d.split("&");
+                });
 
         return {
             path: data[0],
@@ -117,14 +69,18 @@ define('scalejs.routing-historyjs/routing', [
         };
     }
 
-    function convertHistoryEventToNavigatonEvent(evt) {
-        var url = evt.hash.replace(baseUrl, ""),
-            data = deserialize(url);
+    function observeHistory() {
+        return history
+            .observe()
+            .select(function (evt) {
+                var url = evt.hash.replace(baseUrl, ""),
+                    data = deserialize(url);
 
-        return merge(data, {
-            url: serialize(data),
-            timestamp: new Date().getTime()
-        })
+                return merge(data, {
+                    url: serialize(data),
+                    timestamp: new Date().getTime()
+                });
+            });
     }
 
     function removeBrackets(x) {
@@ -136,20 +92,25 @@ define('scalejs.routing-historyjs/routing', [
 
 
         return $yield(function (s) {
+            var transition;
             routedStates[s.id] = data;
 
-            routerTransitions.push(
-                on('routed', function (e) {
-                    if (e.data.path[0] === data.path[0]) {
-                        data.path.slice(1).forEach(function (p, i) {
-                            e.data[removeBrackets(p)] = e.data.path[i + 1]
-                        });
-                        e.data = merge(e.data, e.data.parameters);
-                        return true;
-                    }
-                    return false;
-                }, gotoInternally(s.id))
-            );
+            transition = on('routed', function (e) {
+                if (e.data.path[0] === data.path[0]) {
+                    data.path.slice(1).forEach(function (p, i) {
+                        e.data[removeBrackets(p)] = e.data.path[i + 1];
+                    });
+                    e.data = merge(e.data, e.data.parameters);
+                    return true;
+                }
+                return false;
+            }, gotoInternally(s.id));
+
+            if (routerStateId) {
+                registerTransition(routerStateId, transition);
+            } else {
+                routerTransitions.push(transition);
+            }
         });
     }
 
@@ -166,6 +127,8 @@ define('scalejs.routing-historyjs/routing', [
         var disposable = new core.reactive.CompositeDisposable(),
             router,
             builders;
+
+        routerStateId = sid;
 
         if (has(optsOrBuilders, 'baseUrl')) {
             baseUrl = optsOrBuilders.baseUrl;
@@ -188,9 +151,11 @@ define('scalejs.routing-historyjs/routing', [
                     data = routedStates[e.state];
 
                     data.path = data.path.map(function (p) {
+                        /*jslint regexp: true*/
                         var pkey = p.match(/[^{}]+(?=\})/);
+                        /*jslint regexp: false*/
                         if (has(pkey)) {
-                            return e.currentEvent.data[pkey[0]]
+                            return e.currentEvent.data[pkey[0]];
                         }
                         return p;
                     });
@@ -232,20 +197,7 @@ define('scalejs.routing-historyjs/routing', [
     return {
         //back: back,
         route: route,
-        routerState: routerState
+        routerState: routerState,
+        routeMapper: routeMapper
     };
 });
-
-/*global define*/
-define('scalejs.routing-historyjs', [
-    'scalejs!core',
-    './scalejs.routing-historyjs/routing'
-], function (
-    core,
-    routing
-) {
-
-
-    core.registerExtension({ routing: routing });
-});
-
