@@ -1,0 +1,29 @@
+{
+  "name": "scalejs.routing-historyjs",
+  "version": "0.0.0",
+  "homepage": "",
+  "authors": [],
+  "description": "",
+  "main": [
+    "dist/scalejs.routing-historyjs.min.js"
+  ],
+  "ignore": [
+    "*",
+    "!dist/*.js"
+  ],
+  "dependencies": {
+    "scalejs": "lisovin/scalejs"
+  },
+  "devDependencies": {
+    "requirejs": "latest",
+    "scalejs.functional": "lisovin/scalejs.functional#~0.4.0",
+    "scalejs.statechart-scion": "lisovin/scalejs.statechart-scion#dev",
+    "history": "~1.8.0",
+    "rxjs": "~2.3.11"
+  },
+  "overrides": {
+      "history": {
+          "main": "scripts/bundled-uncompressed/html5/native.history.js"
+      }
+  }
+}

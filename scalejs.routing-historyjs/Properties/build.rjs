@@ -1,7 +1,0 @@
-﻿({
-	mainConfigFile: '../config.js',
-    include: 'scalejs.routing-historyjs',
-    exclude: [
-        'scalejs!core'
-    ]
-})
